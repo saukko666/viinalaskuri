@@ -1,15 +1,9 @@
-import React, { useReducer } from "react";
-import {
-  Paper,
-  Button,
-  Typography,
-  TextField,
-  Container,
-  Input,
-} from "@material-ui/core";
+import React, { useReducer, useMemo, useEffect } from "react";
+import { Paper, Typography, Container } from "@material-ui/core";
 import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
+import { Form } from "./Form";
 
-const useStyles = makeStyles((theme: Theme) =>
+export const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     paper: {
       padding: theme.spacing(1),
@@ -26,14 +20,14 @@ function App() {
     price: number | string;
     subtotal: string;
   };
-  var formData: FormData = {
+  var initialState: FormData = {
     item: "",
     qty: "",
     price: "",
     subtotal: "",
   };
 
-  // thanks to https://medium.com/javascript-in-plain-english/react-controlled-forms-with-hooks-538762aab935
+  // https://medium.com/javascript-in-plain-english/react-controlled-forms-with-hooks-538762aab935
   const reducer = (
     state: FormData,
     { field, value }: { [x: string]: string | number }
@@ -43,13 +37,28 @@ function App() {
       [field]: value,
     };
   };
-  const [form, dispatch] = useReducer(reducer, formData);
+  const [form, dispatch] = useReducer(reducer, initialState);
+
+  const subtotal = useMemo(
+    () => (Number(form.qty) * Number(form.price)).toFixed(2),
+    [form]
+  );
+  useEffect(() => dispatch({ field: "subtotal", value: subtotal }), [subtotal]);
+
+  const resetFields = () => {
+    for (let i = 0; i < Object.keys(form).length; i++) {
+      dispatch({
+        field: Object.keys(form)[i],
+        value: "",
+      });
+    }
+  };
   const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
   };
   const handleForm = (evt: React.ChangeEvent<HTMLInputElement>) => {
     let target = evt.currentTarget;
-    let field = target.id;
+    let field = target.name;
 
     /**
      *  Needs more checks but this should be enough for now.
@@ -69,7 +78,8 @@ function App() {
     }
   };
 
-  const { item, qty, price } = form;
+  // const { item, qty, price } = form;
+  const props = { form, handleSubmit, handleForm, resetFields };
   return (
     <Container maxWidth="sm">
       <Paper className={classes.paper}>
@@ -77,44 +87,7 @@ function App() {
           Viinalaskuri
         </Typography>
 
-        <form action="#" method="GET" onSubmit={handleSubmit}>
-          <Paper className={classes.paper} style={{ display: "flex" }}>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <TextField
-                placeholder="Item name"
-                id="item"
-                value={item}
-                onChange={handleForm}
-              ></TextField>
-              <TextField
-                placeholder="Quantity"
-                id="qty"
-                value={qty}
-                type="number"
-                onChange={handleForm}
-              ></TextField>
-              <TextField
-                placeholder="Price per quantity"
-                id="price"
-                value={price}
-                type="number"
-                inputProps={{ step: 0.1 }}
-                onChange={handleForm}
-              ></TextField>
-              <Input
-                placeholder="Subtotal"
-                readOnly
-                id="subtotal"
-                value={(Number(qty) * Number(price)).toFixed(2)}
-                type="text"
-              ></Input>
-            </div>
-          </Paper>
-          <br />
-          <Button disabled type="submit" color="primary" variant="contained">
-            Submit
-          </Button>
-        </form>
+        <Form {...props} />
 
         <Paper className={classes.paper}>
           <pre>{JSON.stringify(form, null, 2)}</pre>
